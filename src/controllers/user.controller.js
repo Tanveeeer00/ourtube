@@ -3,13 +3,20 @@ import { User } from "../models/user.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import jwt from "jsonwebtoken";
 
+const options = {
+  httpOnly: true,
+  secure: true,
+};
 const generateAccessAndRefreshToken = async (userId) => {
   try {
     const user = await User.findById(userId);
-    const accessToken = generateAccessToken();
-    const refreshToken = generateRefreshToken();
-
+    // console.log(user);
+    const accessToken = user.generateAccessToken();
+    console.log(accessToken);
+    const refreshToken = user.generateRefreshToken();
+    console.log(refreshToken);
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
 
@@ -116,11 +123,18 @@ const loginUser = asyncHandler(async (req, res) => {
   //access and refresh token
   // send token
 
-  const { username, email, password } = req.body;
+  const { email, username, password } = req.body;
+  console.log(password);
 
-  if (!username || !email) {
-    throw new ApiError(404, "username or email is required");
+  if (!username && !email) {
+    throw new ApiError(404, "username and email are required");
   }
+
+  // Here is an alternative of above code based on logic
+
+  // if (!(username || email)) {
+  //   throw new ApiError(404, "username or email is required");
+  // }
 
   const user = await User.findOne({
     $or: [{ username }, { email }],
@@ -129,7 +143,7 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User does not exist");
   }
   const isPasswordValid = await user.isPasswordCorrect(password);
-  if (isPasswordValid) {
+  if (!isPasswordValid) {
     throw new ApiError(401, "invalid user password");
   }
 
@@ -137,21 +151,17 @@ const loginUser = asyncHandler(async (req, res) => {
     user._id
   );
 
-  const loggedInUser = await User.findById(User._id).select(
+  const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken"
   );
 
-  const options = {
-    httpOnly: true,
-    secure: true,
-  };
   return res
     .status(200)
     .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
     .json(
-      200,
       new ApiResponse(
+        200,
         {
           user: loggedInUser,
           accessToken,
@@ -174,14 +184,53 @@ const logoutUser = asyncHandler(async (req, res) => {
       new: true,
     }
   );
-  const options = {
-    httpOnly: true,
-    secure: true,
-  };
+
   return res
     .status(200)
     .clearCookie("accessToken", options)
     .clearCookie("refreshToken", options)
     .json(new ApiResponse(200, {}, "User logged Out"));
 });
-export { registerUser, loginUser, logoutUser };
+
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const incomingRefreshToken =
+    req.cookies.refreshToken || req.body.refreshToken;
+  if (!incomingRefreshToken) {
+    throw new ApiError(401, "unauthorized request");
+  }
+  try {
+    const decodedToken = jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+    const user = await User.findById(decodedToken?._id);
+    if (!user) {
+      throw new ApiError(401, "Invalid refresh token ");
+    }
+    if (incomingRefreshToken !== user?.refreshToken) {
+      throw new ApiError(401, "Refresh token is expired or used");
+    }
+
+    const { accessToken, newRefreshToken } =
+      await generateAccessAndRefreshToken(user._id);
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", newRefreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          {
+            accessToken,
+            refreshToken: newRefreshToken,
+          },
+          "Access Token refreshed"
+        )
+      );
+  } catch (error) {
+    throw new ApiError(401, error?.message || "Invalid refresh token");
+  }
+});
+export { registerUser, loginUser, logoutUser, refreshAccessToken };
+
+// set user in global
