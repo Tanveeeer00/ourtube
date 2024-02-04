@@ -14,9 +14,9 @@ const generateAccessAndRefreshToken = async (userId) => {
     const user = await User.findById(userId);
     // console.log(user);
     const accessToken = user.generateAccessToken();
-    console.log(accessToken);
+    // console.log(accessToken);
     const refreshToken = user.generateRefreshToken();
-    console.log(refreshToken);
+    // console.log(refreshToken);
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
 
@@ -124,7 +124,7 @@ const loginUser = asyncHandler(async (req, res) => {
   // send token
 
   const { email, username, password } = req.body;
-  console.log(password);
+  // console.log(password);
 
   if (!username && !email) {
     throw new ApiError(404, "username and email are required");
