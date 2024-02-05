@@ -30,6 +30,12 @@ there are some steps :
 - we will use some methods like filter or reduce
 - we get 25 blue pens. so the point is that 25 pens now our original data. we have nothing to do with 75 pens. if we execute any function that will only apply on 25 pens.
 
+### note
+
+- when we retrive id from db then we got a string not an id. mongoose internally convert that sttrings into id. But when we use aggregate pipeline then they sent directly to the db without mongoose. so we need to convert strings to id manually.
+
+  `new mongoose.Types.ObjectId()`
+
 ## $Match
 
 - In mongo db, it's a syntax which can compare some different property and filter out.
