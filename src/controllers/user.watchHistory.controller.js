@@ -1,7 +1,7 @@
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { User } from "../models/user.models";
+import { User } from "../models/user.models.js";
 import mongoose from "mongoose";
 
 const getWatchHistory = asyncHandler(async (req, res) => {
@@ -24,12 +24,11 @@ const getWatchHistory = asyncHandler(async (req, res) => {
               localField: "owner",
               foreignField: "_id",
               as: "owner",
-
               pipeline: [
                 {
                   $project: {
+                    fullName: 1,
                     username: 1,
-                    fullname: 1,
                     avatar: 1,
                   },
                 },
@@ -54,7 +53,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
       new ApiResponse(
         200,
         user[0].watchHistory,
-        "Watched history fetched successfully"
+        "Watch history fetched successfully"
       )
     );
 });
