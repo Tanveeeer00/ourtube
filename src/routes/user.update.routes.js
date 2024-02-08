@@ -11,18 +11,18 @@ import {
 import { getUserChannelProfile } from "../controllers/subscription.controller.js";
 import { getWatchHistory } from "../controllers/user.watchHistory.controller.js";
 
-const updateRouter = Router();
+const router = Router();
 
-updateRouter.route("/change-password").post(verifyJWT, changeCurrentPassword);
-updateRouter.route("/current-user").get(verifyJWT, getCurrentUser);
-updateRouter.route("/update-account").patch(verifyJWT, updateAccountDetails);
-updateRouter
+router.route("/change-password").post(verifyJWT, changeCurrentPassword);
+router.route("/current-user").get(verifyJWT, getCurrentUser);
+router.route("/update-account").patch(verifyJWT, updateAccountDetails);
+router
   .route("/avatar")
   .patch(verifyJWT, upload.single("avatar"), updateUserAvatar);
-updateRouter
+router
   .route("/cover-image")
-  .patch(verifyJWT, upload.single("/coverImage"), updateUserCoverImage);
-updateRouter.route("/c/:username").get(verifyJWT, getUserChannelProfile);
-updateRouter.route("/history").get(verifyJWT, getWatchHistory);
+  .patch(verifyJWT, upload.single("coverImage"), updateUserCoverImage);
+router.route("/c/:username").get(verifyJWT, getUserChannelProfile);
+router.route("/history").get(verifyJWT, getWatchHistory);
 
-export default updateRouter;
+export default router;
